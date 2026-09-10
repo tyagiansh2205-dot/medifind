@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AuditLog {
+  id          String   @id
+  action      String
+  entityType  String
+  entityId    String
+  performedBy String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+model Manufacturer {
+  id        String     @id
+  name      String
+  code      String?    @unique
+  createdAt DateTime   @default(now())
+  Medicine  Medicine[]
+}
+
+model Medicine {
+  id                   String            @id
+  skuCode              String            @unique
+  barcode              String?           @unique
+  genericName          String
+  brandName            String
+  dosageForm           String?
+  strength             String?
+  prescriptionRequired Boolean           @default(false)
+  manufacturerId       String
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime
+  category             String?
+  gstRate              Decimal?          @db.Decimal(5, 2)
+  hsnCode              String?
+  packSize             String?
+  saltComposition      String?
+  schedule             String?
+  unit                 String?
+  Manufacturer         Manufacturer      @relation(fields: [manufacturerId], references: [id])
+  MedicineBatch        MedicineBatch[]
+  ReservationItem      ReservationItem[]
+}
+
+model MedicineBatch {
+  id                  String             @id
+  batchNumber         String
+  medicineId          String
+  pharmacyId          String
+  expiryDate          DateTime
+  purchasePrice       Decimal            @db.Decimal(10, 2)
+  sellingPrice        Decimal            @db.Decimal(10, 2)
+  createdAt           DateTime           @default(now())
+  freeQuantity        Int?
+  looseQuantity       Int?
+  manufacturingDate   DateTime?
+  marginPercent       Decimal?           @db.Decimal(5, 2)
+  mrp                 Decimal?           @db.Decimal(10, 2)
+  packQuantity        Int?
+  ptr                 Decimal?           @db.Decimal(10, 2)
+  purchaseInvoiceDate DateTime?
+  purchaseInvoiceNo   String?
+  rackNumber          String?
+  shelfNumber         String?
+  supplierGstin       String?
+  supplierName        String?
+  Medicine            Medicine           @relation(fields: [medicineId], references: [id])
+  Pharmacy            Pharmacy           @relation(fields: [pharmacyId], references: [id])
+  StockTransaction    StockTransaction[]
+
+  @@index([medicineId])
+  @@index([pharmacyId])
+}
+
+model Pharmacy {
+  id                 String           @id @default(uuid())
+  name               String
+  licenseNumber      String           @unique
+  phone              String?
+  email              String?
+  address            String
+  city               String
+  state              String
+  pincode            String
+  latitude           Float?
+  longitude          Float?
+  
+  // --- NEW FIELDS FOR VERIFICATION ---
+  status             PharmacyStatus   @default(PENDING)
+  legalStoreName     String?          // Add this
+  addressProofUrl    String?
+  gstDocumentUrl     String?          
+  panDocumentUrl     String?          
+  licenseDocumentUrl String?          
+  
+// Update this exact line
+  ownerId            String?          @unique 
+  owner              User?            @relation(fields: [ownerId], references: [id])
+  
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  
+  MedicineBatch      MedicineBatch[]
+  Reservation        Reservation[]
+}
+model Prescription {
+  id        String             @id
+  userId    String
+  fileUrl   String
+  status    PrescriptionStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+  User      User               @relation(fields: [userId], references: [id])
+}
+
+model Reservation {
+  id              String            @id
+  reservationCode String            @unique
+  userId          String
+  pharmacyId      String
+  status          ReservationStatus @default(PENDING)
+  expiresAt       DateTime
+  createdAt       DateTime          @default(now())
+  Pharmacy        Pharmacy          @relation(fields: [pharmacyId], references: [id])
+  User            User              @relation(fields: [userId], references: [id])
+  ReservationItem ReservationItem[]
+}
+
+model ReservationItem {
+  id            String      @id
+  reservationId String
+  medicineId    String
+  quantity      Int
+  Medicine      Medicine    @relation(fields: [medicineId], references: [id])
+  Reservation   Reservation @relation(fields: [reservationId], references: [id])
+}
+
+model StockTransaction {
+  id            String               @id
+  batchId       String
+  type          StockTransactionType
+  quantity      Int
+  remarks       String?
+  createdAt     DateTime             @default(now())
+  MedicineBatch MedicineBatch        @relation(fields: [batchId], references: [id])
+
+  @@index([batchId])
+}
+
+model User {
+  id           String         @id @default(uuid())
+  name         String
+  email        String         @unique
+  passwordHash String
+  role         UserRole       @default(CUSTOMER)
+  
+  // New fields for the auth pipeline
+  phone        String?
+  isVerified   Boolean        @default(false)
+  isActive     Boolean        @default(true)
+  
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Your existing database relations (Do not change these)
+  Prescription Prescription[]
+  Reservation  Reservation[]
+  Pharmacy Pharmacy?
+}
+
+enum PharmacyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PrescriptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReservationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COLLECTED
+  EXPIRED
+}
+
+enum StockTransactionType {
+  PURCHASE
+  SALE
+  RESERVATION
+  RESERVATION_RELEASE
+  ADJUSTMENT
+  EXPIRED
+}
+
+enum UserRole {
+  CUSTOMER
+  PHARMACIST
+  OWNER
+  PHARMACY_OWNER   // <-- Added back to support your legacy data
+  ADMIN
+  SUPER_ADMIN
+}
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

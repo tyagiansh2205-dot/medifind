@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Console - Pharmacy Approvals</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0f172a; --slate: #64748b; --paper: #ffffff; --paper-soft: #f8fafc;
+      --primary: #047857; --primary-hover: #065f46; --line: #e2e8f0;
+    }
+    body { font-family: 'Inter', sans-serif; background-color: var(--paper-soft); margin: 0; padding: 40px; color: var(--ink); }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .header h1 { margin: 0; font-size: 1.8rem; }
+    .logout-btn { background: none; border: 1px solid var(--line); padding: 8px 16px; cursor: pointer; border-radius: 6px; }
+    
+    .card { background: var(--paper); border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+    
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background-color: #f1f5f9; padding: 16px; font-size: 0.85rem; color: var(--slate); font-weight: 600; border-bottom: 1px solid var(--line); }
+    td { padding: 16px; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
+    
+    .approve-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+    .approve-btn:hover { background: var(--primary-hover); }
+    .view-doc-btn { background: white; color: var(--ink); border: 1px solid var(--line); padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 0.85rem;}
+    
+    .status-badge { background: #fef08a; color: #854d0e; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Platform Governance: Pharmacy Verification</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="card">
+    <table id="pendingTable">
+      <thead>
+        <tr>
+          <th>STORE NAME</th>
+          <th>OWNER</th>
+          <th>DOCUMENTS</th>
+          <th>STATUS</th>
+          <th>ACTION</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">Loading pending requests...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+<script>
+    const token = localStorage.getItem('medifind-token');
+    
+    if (!token) {
+      window.location.href = 'login.html';
+    }
+
+    async function fetchPendingPharmacies() {
+      try {
+        const response = await fetch('http://localhost:5000/api/admin/pending', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.status === 403) {
+            alert('Access Denied. You are not an Admin.');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        const data = await response.json();
+        const tbody = document.getElementById('tableBody');
+        
+        // Catch backend errors
+        if (!response.ok || !Array.isArray(data)) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Backend Error: ${data.error || 'Failed to fetch data'}</td></tr>`;
+            return;
+        }
+
+        renderTable(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Network error. Check your backend console.</td></tr>';
+      }
+    }
+
+    function renderTable(pharmacies) {
+      const tbody = document.getElementById('tableBody');
+      
+      if (pharmacies.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">No pending approvals found. Everything is up to date!</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = ''; 
+      
+      pharmacies.forEach(pharmacy => {
+        const row = document.createElement('tr');
+        
+        // Safely extract owner data regardless of your Prisma schema naming
+        const ownerData = pharmacy.owner || pharmacy.user || pharmacy.User || { name: 'Unknown Owner', email: 'N/A' };
+        
+        row.innerHTML = `
+          <td style="font-weight: 500;">${pharmacy.name || 'N/A'}</td>
+          <td>${ownerData.name}<br><span style="font-size:0.8rem; color:var(--slate)">${ownerData.email}</span></td>
+          <td>
+            ${pharmacy.gstDocumentUrl ? `<a href="http://localhost:5000/uploads/${pharmacy.gstDocumentUrl}" target="_blank" class="view-doc-btn">GST</a>` : '<span style="color:var(--slate); font-size:0.8rem;">No GST</span>'}
+            ${pharmacy.licenseDocumentUrl ? `<a href="http://localhost:5000/uploads/${pharmacy.licenseDocumentUrl}" target="_blank" class="view-doc-btn">License</a>` : '<span style="color:var(--slate); font-size:0.8rem;">No License</span>'}
+          </td>
+          <td><span class="status-badge">${pharmacy.status}</span></td>
+          <td>
+            <button class="approve-btn" onclick="approvePharmacy('${pharmacy.id}')">Approve Setup</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function approvePharmacy(id) {
+      if (!confirm('Are you sure you want to approve this pharmacy?')) return;
+      try {
+        const response = await fetch(`http://localhost:5000/api/admin/approve/${id}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          alert('Pharmacy Approved Successfully!');
+          fetchPendingPharmacies(); 
+        } else {
+          alert('Failed to approve pharmacy.');
+        }
+      } catch (error) {
+        console.error("Approval Error:", error);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('medifind-token');
+      localStorage.removeItem('medifind-user');
+      window.location.href = 'login.html';
+    }
+
+    fetchPendingPharmacies();
+  </script>
+</body>
+</html>

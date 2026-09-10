@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediFind — Find medicine, right now</title>
+    <script src="auth-guard.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <img class="brand-image" src="SAVE_20260612_121856.jpg.jpeg" alt="JSL Works logo">
+      </span>
+      <span class="brand-copy brand-copy--stacked">
+        <span class="brand-tagline">विद्या परं बलमेतत् सर्वं ध्रुवं नित्यम्</span>
+      </span>
+    </a>
+    <nav class="nav-links">
+      <button class="nav-link active" data-view="customer">Find Medicine</button>
+      <button class="nav-link" data-view="pharmacy">Pharmacy Dashboard</button>
+      <button class="nav-link" data-view="pharmacist">Pharmacist Desk</button>
+      <button class="nav-link" data-view="admin">Admin Console</button>
+    </nav>
+    <button class="nav-cta" id="navAccountBtn">Sign in</button>
+  </div>
+</header>
+
+<!-- ============ CUSTOMER VIEW ============ -->
+<main id="view-customer" class="view active">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Real-time medicine availability network</p>
+        <h1>Know it's in stock <em>before</em> you leave the house.</h1>
+        <p class="hero-sub">Search once, see every nearby pharmacy that actually has what you need — live quantities, live prices, a reservation that holds your stock while you travel.</p>
+
+        <div class="search-card" id="heroSearch">
+          <div class="search-row">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input type="text" id="medSearchInput" placeholder="Search medicine, brand, or generic name…" autocomplete="off">
+            <button class="search-btn" id="medSearchBtn">Search</button>
+          </div>
+          <div class="search-tags">
+            <span>Try:</span>
+            <button class="tag" data-q="Paracetamol">Paracetamol</button>
+            <button class="tag" data-q="Azithromycin">Azithromycin</button>
+            <button class="tag" data-q="Insulin">Insulin</button>
+            <button class="tag" data-q="Metformin">Metformin</button>
+          </div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat"><span class="stat-num">12</span><span class="stat-label">pharmacies live</span></div>
+          <div class="stat"><span class="stat-num">40</span><span class="stat-label">SKUs tracked</span></div>
+          <div class="stat"><span class="stat-num">98.2%</span><span class="stat-label">stock accuracy</span></div>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="stock-ticker-card">
+          <div class="ticker-head">
+            <span class="pulse-dot pulse-dot--sm live"></span>
+            <span>Live availability feed</span>
+          </div>
+          <div class="ticker-list" id="tickerList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results-section" id="resultsSection">
+    <div class="results-head">
+      <div>
+        <h2 id="resultsTitle">Search a medicine to see live pharmacy stock</h2>
+        <p class="muted" id="resultsSub">Results show distance, price, and exact quantity on shelf — updated within minutes.</p>
+      </div>
+      <div class="filter-bar" id="filterBar">
+        <select id="sortSelect">
+          <option value="distance">Sort: Nearest first</option>
+          <option value="price">Sort: Lowest price</option>
+          <option value="stock">Sort: Most in stock</option>
+        </select>
+        <button class="chip-filter" id="filterInStock">In stock only</button>
+      </div>
+    </div>
+
+    <div class="results-grid" id="resultsGrid"></div>
+
+    <div class="alt-suggestion" id="altSuggestion" hidden>
+      <div class="alt-icon">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/></svg>
+      </div>
+      <div>
+        <h3>Brand low everywhere nearby — generic equivalents are well stocked</h3>
+        <p class="muted">Same active ingredient, verified equivalence. Tap to add to your search.</p>
+        <div class="alt-chips" id="altChips"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how">
+    <h2>From search to pickup, four steps</h2>
+    <div class="how-grid">
+      <div class="how-card">
+        <span class="how-tag">Search</span>
+        <h3>Search by name</h3>
+        <p>Type a brand, generic, or salt name — we match across every connected pharmacy's live inventory.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-tag">Compare</span>
+        <h3>Compare shelves</h3>
+        <p>Distance, price, and exact unit count side by side, so the decision takes seconds, not a second trip.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-tag">Reserve</span>
+        <h3>Lock the stock</h3>
+        <p>A reservation ID temporarily holds your units so someone else can't buy them out from under you.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-tag">Collect</span>
+        <h3>Walk in, walk out</h3>
+        <p>Show your reservation ID at the counter. Prescription items are pre-verified before you arrive.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRESCRIPTION BANNER -->
+  <section class="rx-banner">
+    <div class="rx-banner-inner">
+      <div class="rx-icon">℞</div>
+      <div class="rx-copy">
+        <h3>Prescription medicine? Upload it once, skip the counter wait.</h3>
+        <p class="muted">Our pharmacists review and approve before you arrive — your reservation holds until verification clears.</p>
+      </div>
+      <button class="btn-outline" id="uploadRxBtn">Upload prescription</button>
+    </div>
+  </section>
+</main>
+
+<!-- ============ RESERVATION MODAL ============ -->
+<div class="modal-overlay" id="reserveModal">
+  <div class="modal">
+    <button class="modal-close" id="closeReserve">&times;</button>
+    <div id="reserveStep1">
+      <p class="eyebrow">Reserve medicine</p>
+      <h3 id="reserveMedName">Medicine name</h3>
+      <p class="muted" id="reservePharmName">Pharmacy name</p>
+      <div class="reserve-qty">
+        <label for="qtyInput">Quantity</label>
+        <div class="qty-control">
+          <button id="qtyMinus">−</button>
+          <input type="number" id="qtyInput" value="1" min="1" max="10">
+          <button id="qtyPlus">+</button>
+        </div>
+      </div>
+      <div class="reserve-note">
+        <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
+        Stock held for 30 minutes from confirmation.
+      </div>
+      <button class="btn-primary full" id="confirmReserveBtn">Confirm reservation</button>
+    </div>
+    <div id="reserveStep2" hidden>
+      <div class="reserve-success-icon">
+        <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>Reservation confirmed</h3>
+      <p class="muted">Show this ID at the counter within 30 minutes.</p>
+      <div class="reservation-id" id="reservationIdDisplay">MF-000000</div>
+      <button class="btn-primary full" id="doneReserveBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PHARMACY DASHBOARD VIEW ============ -->
+<main id="view-pharmacy" class="view">
+  <section class="dash-shell">
+    <aside class="dash-sidebar">
+      <div class="dash-pharmacy-name">
+        <span class="pulse-dot pulse-dot--sm live"></span>
+        Wellness Plus Pharmacy
+      </div>
+      <nav class="dash-nav">
+        <button class="dash-nav-item active" data-panel="overview">Overview</button>
+        <button class="dash-nav-item" data-panel="inventory">Inventory</button>
+        <button class="dash-nav-item" data-panel="reservations">Reservations</button>
+        <button class="dash-nav-item" data-panel="analytics">Analytics</button>
+      </nav>
+    </aside>
+
+    <div class="dash-content">
+      <!-- Overview panel -->
+      <div class="dash-panel active" id="panel-overview">
+        <div class="dash-head">
+          <h2>Good morning, Wellness Plus</h2>
+          <p class="muted">Tuesday, June 16 — here's where things stand.</p>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <span class="kpi-label">Items in stock</span>
+            <span class="kpi-num">40</span>
+            <span class="kpi-delta up">▲ SKU tracked inventory</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Low stock alerts</span>
+            <span class="kpi-num warn">7</span>
+            <span class="kpi-delta">Needs reorder</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Pending reservations</span>
+            <span class="kpi-num">12</span>
+            <span class="kpi-delta">3 expiring soon</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Expiring in 30 days</span>
+            <span class="kpi-num danger">5</span>
+            <span class="kpi-delta">Review batch list</span>
+          </div>
+        </div>
+
+        <div class="dash-two-col">
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <h3>Low stock alerts</h3>
+              <span class="badge badge-warn">7 items</span>
+            </div>
+            <table class="data-table" id="lowStockTable"></table>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-head">
+              <h3>Most searched nearby</h3>
+              <span class="badge">This week</span>
+            </div>
+            <div class="bar-list" id="demandList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory panel -->
+      <div class="dash-panel" id="panel-inventory">
+        <div class="dash-head dash-head-row">
+          <div>
+            <h2>Inventory</h2>
+            <p class="muted">Manage stock levels, batches, and pricing.</p>
+          </div>
+          <button class="btn-primary" id="addMedicineBtn">+ Add medicine</button>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="inventoryTable"></table>
+        </div>
+      </div>
+
+      <!-- Reservations panel -->
+      <div class="dash-panel" id="panel-reservations">
+        <div class="dash-head">
+          <h2>Reservations</h2>
+          <p class="muted">Accept, reject, or mark collected.</p>
+        </div>
+        <div class="reservation-list" id="reservationList"></div>
+      </div>
+
+      <!-- Analytics panel -->
+      <div class="dash-panel" id="panel-analytics">
+        <div class="dash-head">
+          <h2>Analytics</h2>
+          <p class="muted">Demand patterns to plan reorders smarter.</p>
+        </div>
+        <div class="panel-card">
+          <h3 class="chart-title">Reservations vs. searches, last 7 days</h3>
+          <svg class="trend-chart" id="trendChart" viewBox="0 0 600 220"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ PHARMACIST VIEW ============ -->
+<main id="view-pharmacist" class="view">
+  <section class="dash-shell">
+    <aside class="dash-sidebar">
+      <div class="dash-pharmacy-name">
+        <span class="pulse-dot pulse-dot--sm live"></span>
+        Pharmacist Desk
+      </div>
+      <nav class="dash-nav">
+        <button class="dash-nav-item active" data-panel="rxqueue">Prescription queue</button>
+        <button class="dash-nav-item" data-panel="collectqueue">Collection queue</button>
+        <button class="dash-nav-item" data-panel="medinfo">Medicine info</button>
+      </nav>
+    </aside>
+    <div class="dash-content">
+      <div class="dash-panel active" id="panel-rxqueue">
+        <div class="dash-head">
+          <h2>Prescription verification</h2>
+          <p class="muted">Review uploads, approve or reject before reservation releases.</p>
+        </div>
+        <div class="rx-queue" id="rxQueue"></div>
+      </div>
+
+      <div class="dash-panel" id="panel-collectqueue">
+        <div class="dash-head">
+          <h2>Collection queue</h2>
+          <p class="muted">Confirm pickups against reservation IDs.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="collectionTable"></table>
+        </div>
+      </div>
+
+      <div class="dash-panel" id="panel-medinfo">
+        <div class="dash-head">
+          <h2>Medicine information</h2>
+          <p class="muted">Quick reference for customer questions.</p>
+        </div>
+        <div class="med-info-grid" id="medInfoGrid"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ ADMIN VIEW ============ -->
+<main id="view-admin" class="view">
+  <section class="dash-shell">
+    <aside class="dash-sidebar">
+      <div class="dash-pharmacy-name">
+        <span class="pulse-dot pulse-dot--sm live"></span>
+        Admin Console
+      </div>
+      <nav class="dash-nav">
+        <button class="dash-nav-item active" data-panel="adminoverview">Platform overview</button>
+        <button class="dash-nav-item" data-panel="verification">Pharmacy verification</button>
+        <button class="dash-nav-item" data-panel="useractivity">User activity</button>
+      </nav>
+    </aside>
+    <div class="dash-content">
+      <div class="dash-panel active" id="panel-adminoverview">
+        <div class="dash-head">
+          <h2>Platform overview</h2>
+          <p class="muted">Operational health across the network.</p>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card"><span class="kpi-label">Active pharmacies</span><span class="kpi-num">12</span><span class="kpi-delta up">▲ 3 this month</span></div>
+          <div class="kpi-card"><span class="kpi-label">Active users</span><span class="kpi-num">25</span><span class="kpi-delta up">▲ Testing phase</span></div>
+          <div class="kpi-card"><span class="kpi-label">Reservations today</span><span class="kpi-num">8</span><span class="kpi-delta">87% fulfilled</span></div>
+          <div class="kpi-card"><span class="kpi-label">Pending verifications</span><span class="kpi-num warn">3</span><span class="kpi-delta">Awaiting license check</span></div>
+        </div>
+        <div class="panel-card">
+          <h3 class="chart-title">Platform-wide medicine demand</h3>
+          <svg class="trend-chart" id="adminTrendChart" viewBox="0 0 600 220"></svg>
+        </div>
+      </div>
+
+      <div class="dash-panel" id="panel-verification">
+        <div class="dash-head">
+          <h2>Pharmacy verification</h2>
+          <p class="muted">Review license documents before approving registrations.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="verificationTable"></table>
+        </div>
+      </div>
+
+      <div class="dash-panel" id="panel-useractivity">
+        <div class="dash-head">
+          <h2>User activity &amp; audit log</h2>
+          <p class="muted">Monitor flagged behavior and platform actions.</p>
+        </div>
+        <div class="panel-card">
+          <table class="data-table data-table--full" id="auditTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="brand footer-brand"><span class="brand-mark"><span class="pulse-dot"></span></span>MediFind</div>
+    <p class="muted">A unified platform for medicine discovery, inventory visibility, and reservation management.</p>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
